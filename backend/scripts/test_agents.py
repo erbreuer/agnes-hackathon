@@ -4,6 +4,8 @@ Usage (from the backend/ directory):
     python scripts/test_agents.py analyze
     python scripts/test_agents.py plan
     python scripts/test_agents.py scout
+    python scripts/test_agents.py render
+    python scripts/test_agents.py pipeline   # runs the whole flow end-to-end
 """
 import asyncio
 import base64
@@ -14,7 +16,7 @@ import sys
 # Make backend/ importable when run as `python scripts/test_agents.py`.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agents import analyze_space, plan_design, scout_products  # noqa: E402
+from agents import analyze_space, plan_design, render_room, scout_products  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -88,7 +90,91 @@ async def run_scout():
     print("\nAll assertions passed.")
 
 
-MODES = {"analyze": run_analyze, "plan": run_plan, "scout": run_scout}
+_STUB_PRODUCTS = [
+    {
+        "name": "Mid-Century Modern Sofa",
+        "price": 699.0,
+        "link": "https://www.wayfair.com/furniture/pdp/sofa-example",
+        "image": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400",
+    },
+    {
+        "name": "Walnut Coffee Table",
+        "price": 299.0,
+        "link": "https://www.wayfair.com/furniture/pdp/coffee-table-example",
+        "image": "https://images.unsplash.com/photo-1567016432779-094069958ea5?w=400",
+    },
+    {
+        "name": "Linen Floor Lamp",
+        "price": 149.0,
+        "link": "https://www.wayfair.com/furniture/pdp/floor-lamp-example",
+        "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400",
+    },
+]
+
+_STUB_DESIGN_SUMMARY = (
+    "Scandinavian minimalist living room with warm oak tones, soft linen textiles, "
+    "and abundant natural light. Clean lines, functional layout."
+)
+
+
+async def run_render():
+    renders = await render_room(_load_room_b64(), _STUB_PRODUCTS, _STUB_DESIGN_SUMMARY)
+    print(json.dumps(renders, indent=2))
+    print(f"\n{len(renders)}/3 renders returned.")
+
+
+def _plan_items_to_scout_items(plan_items: list[dict]) -> list[dict]:
+    """Bridge F03 plan items → F04 scout input shape."""
+    return [
+        {
+            "search_query": it["search_query"],
+            "budget_cap": it["max_price"],
+            "category": it["category"],
+        }
+        for it in plan_items
+    ]
+
+
+async def run_pipeline():
+    """End-to-end: analyze_space → plan_design → scout_products → render_room."""
+    room_b64 = _load_room_b64()
+
+    print("=== 1/4 analyze_space ===")
+    brief = await analyze_space(room_b64)
+    print(json.dumps(brief, indent=2))
+
+    print("\n=== 2/4 plan_design ===")
+    plan = await plan_design(brief, _SAMPLE_PROMPT, _SAMPLE_BUDGET)
+    print(json.dumps(plan, indent=2))
+    _assert_budget(plan, _SAMPLE_BUDGET, "pipeline")
+    if not plan["items"]:
+        print("[pipeline] FAIL: plan returned no items")
+        sys.exit(1)
+
+    print("\n=== 3/4 scout_products ===")
+    scout_items = _plan_items_to_scout_items(plan["items"])
+    products = await scout_products(scout_items)
+    print(f"got {len(products)}/{len(scout_items)} products")
+    for p in products:
+        print(json.dumps(p, indent=2))
+    if not products:
+        print("[pipeline] FAIL: scout returned no products")
+        sys.exit(1)
+
+    print("\n=== 4/4 render_room ===")
+    renders = await render_room(room_b64, products, plan["design_summary"])
+    print(json.dumps(renders, indent=2))
+    print(f"\n{len(renders)}/3 renders returned.")
+    print("\n[pipeline] done.")
+
+
+MODES = {
+    "analyze": run_analyze,
+    "plan": run_plan,
+    "scout": run_scout,
+    "render": run_render,
+    "pipeline": run_pipeline,
+}
 
 
 def main():
