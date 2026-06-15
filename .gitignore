@@ -1,0 +1,11 @@
+# Claude Code machine-local settings (permission grants, not shared)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+
+# Python / backend
+backend/.env
+backend/.venv/
+__pycache__/
+*.pyc
