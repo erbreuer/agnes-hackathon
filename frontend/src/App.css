@@ -211,62 +211,109 @@ body {
   line-height: 1.5;
 }
 
-/* ── Form card entrance ── */
+/* ── Form card — seamless, no box ── */
 .form-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
   animation: fly-in 0.6s var(--ease-out) 120ms both;
 }
 
-/* ── Form fields ── */
+/* ── Form heading — freestanding, no card ── */
+.form-heading {
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.form-sub {
+  font-size: 15px;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-bottom: 28px;
+  text-wrap: pretty;
+  line-height: 1.5;
+}
+
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 20px;
+}
+
 .field-label {
   display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-body);
-  margin: 24px 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 20px 0 8px;
 }
 
 .input, .textarea {
   width: 100%;
-  border: 1px solid var(--sand-dark);
+  border: 1.5px solid var(--sand);
   border-radius: 13px;
-  padding: 13px 16px;
+  padding: 14px 16px;
   font-size: 15px;
   font-family: inherit;
   font-weight: 400;
   color: var(--text-dark);
-  background: rgba(255, 253, 248, 0.9);
+  background: var(--parchment);
   outline: none;
   transition: border-color 0.18s var(--ease-out),
+              background   0.18s var(--ease-out),
               box-shadow   0.18s var(--ease-out);
 }
 
+.input:hover:not(:disabled), .textarea:hover:not(:disabled) {
+  background: var(--cream);
+  border-color: var(--sand-dark);
+}
+
 .input:focus, .textarea:focus {
+  background: #ffffff;
   border-color: var(--forest);
-  box-shadow: 0 0 0 3px rgba(45, 74, 53, 0.15);
+  box-shadow: 0 0 0 3px rgba(45, 74, 53, 0.12);
 }
 
 .input:disabled, .textarea:disabled { opacity: 0.5; cursor: not-allowed; }
-.input::placeholder, .textarea::placeholder { color: var(--text-muted); }
+.input::placeholder, .textarea::placeholder { color: var(--sand-dark); }
 .textarea { resize: vertical; min-height: 96px; }
 
 .input-prefix-wrap {
   display: flex;
   align-items: center;
-  border: 1px solid var(--sand-dark);
+  border: 1.5px solid var(--sand);
   border-radius: 13px;
   overflow: hidden;
-  background: rgba(255, 253, 248, 0.9);
+  background: var(--parchment);
   transition: border-color 0.18s var(--ease-out),
+              background   0.18s var(--ease-out),
               box-shadow   0.18s var(--ease-out);
 }
 
+.input-prefix-wrap:hover {
+  background: var(--cream);
+  border-color: var(--sand-dark);
+}
+
 .input-prefix-wrap:focus-within {
+  background: #ffffff;
   border-color: var(--forest);
-  box-shadow: 0 0 0 3px rgba(45, 74, 53, 0.15);
+  box-shadow: 0 0 0 3px rgba(45, 74, 53, 0.12);
 }
 
 .input-prefix {
-  padding: 13px 4px 13px 16px;
+  padding: 14px 4px 14px 16px;
   color: var(--text-muted);
   font-size: 15px;
   font-weight: 400;
@@ -281,13 +328,14 @@ body {
   background: transparent;
 }
 
-.input--budget:focus { box-shadow: none; }
+.input--budget:hover { background: transparent; border-color: transparent; }
+.input--budget:focus { box-shadow: none; background: transparent; }
 
-/* ── Drop zone ── */
+/* ── Drop zone — more polished ── */
 .dropzone {
   border: 1.5px dashed var(--sand-dark);
   border-radius: var(--radius);
-  background: rgba(250, 244, 234, 0.6);
+  background: var(--parchment);
   min-height: 192px;
   display: flex;
   align-items: center;
@@ -300,17 +348,35 @@ body {
               transform    0.2s var(--spring);
 }
 
+.dropzone--sm {
+  min-height: 120px;
+}
+
+.dropzone--sm .dropzone-icon {
+  width: 44px;
+  height: 36px;
+}
+
+.dropzone--sm .dropzone-hint {
+  font-size: 13px;
+  gap: 8px;
+}
+
 .dropzone:hover {
   border-color: var(--forest-mid);
-  background: rgba(245, 237, 224, 0.7);
+  background: var(--cream);
   transform: scale(1.005);
 }
 
 .dropzone--filled {
   border-style: solid;
   border-color: var(--sand);
-  min-height: 280px;
+  min-height: 200px;
   background: var(--cream);
+}
+
+.dropzone--filled.dropzone--sm {
+  min-height: 160px;
 }
 
 .dropzone--filled:hover { transform: none; }
@@ -341,7 +407,7 @@ body {
 
 .dropzone-preview {
   width: 100%;
-  height: 280px;
+  height: 160px;
   object-fit: cover;
 }
 
@@ -402,11 +468,14 @@ body {
 
 .btn--primary {
   width: 100%;
-  margin-top: 24px;
+  margin-top: 28px;
   background: var(--forest);
   color: var(--warm-white);
-  box-shadow: 0 2px 8px rgba(45,74,53,0.18),
-              0 8px 20px rgba(45,74,53,0.12);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  box-shadow: 0 2px 8px rgba(45,74,53,0.2),
+              0 8px 24px rgba(45,74,53,0.12);
 }
 
 .btn--primary:hover:not(:disabled) {
@@ -736,23 +805,29 @@ body {
 
 /* ── Entrance animations ── */
 @keyframes fly-in {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Results panel — staggered fly-in */
-.results-panel > *:nth-child(1) { animation: fly-in 0.5s var(--ease-out) 0ms   both; }
-.results-panel > *:nth-child(2) { animation: fly-in 0.5s var(--ease-out) 80ms  both; }
-.results-panel > *:nth-child(3) { animation: fly-in 0.5s var(--ease-out) 160ms both; }
-.results-panel > *:nth-child(4) { animation: fly-in 0.5s var(--ease-out) 240ms both; }
+/* Scroll-triggered: hidden until .visible added by IntersectionObserver */
+.fly-in-scroll {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.55s var(--ease-out),
+              transform 0.55s var(--ease-out);
+}
 
-/* Product cards */
+.fly-in-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger for siblings */
+.fly-in-scroll:nth-child(2) { transition-delay: 60ms; }
+.fly-in-scroll:nth-child(3) { transition-delay: 120ms; }
+.fly-in-scroll:nth-child(4) { transition-delay: 180ms; }
+
+/* Product cards staggered (CSS-only, fires when card enters view) */
 .products-grid .product-card:nth-child(1)   { animation: fly-in 0.4s var(--ease-out) 0ms   both; }
 .products-grid .product-card:nth-child(2)   { animation: fly-in 0.4s var(--ease-out) 40ms  both; }
 .products-grid .product-card:nth-child(3)   { animation: fly-in 0.4s var(--ease-out) 80ms  both; }
@@ -773,10 +848,13 @@ body {
   .spinner { animation: none; opacity: 0.6; }
 
   .hero-eyebrow, .hero-title, .hero-sub, .form-card,
-  .results-panel > *,
+  .fly-in-scroll,
   .products-grid .product-card,
   .renders-grid .render-link {
     animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 
   .btn, .product-card, .render-link,

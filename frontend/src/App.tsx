@@ -1,6 +1,21 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { postDesign, postRefine } from './api.js'
 import './App.css'
+
+function useFlyIn() {
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); observer.disconnect() } },
+      { threshold: 0.12 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+  return ref as React.RefObject<HTMLElement> & React.RefObject<HTMLDivElement> & React.RefObject<HTMLSelectElement>
+}
 
 type Product = { name: string; price: number; link: string; image: string }
 type Results = {
@@ -84,14 +99,19 @@ export default function App() {
     }
   }, [results, feedback])
 
+  const summaryRef = useFlyIn()
+  const rendersRef = useFlyIn()
+  const productsRef = useFlyIn()
+  const refineRef = useFlyIn()
+
   const formPanel = (
     <div className="form-panel">
       <section className="card form-card">
-        <h2>Design your room</h2>
-        <p className="card-sub">Upload a photo, describe your vision, set a budget.</p>
+        <h2 className="form-heading">Design your room</h2>
+        <p className="form-sub">Upload a photo, describe your vision, set a budget.</p>
 
         <div
-          className={`dropzone ${photo ? 'dropzone--filled' : ''}`}
+          className={`dropzone dropzone--sm ${photo ? 'dropzone--filled' : ''}`}
           onDrop={handleDrop}
           onDragOver={e => e.preventDefault()}
           onClick={() => document.getElementById('file-input')?.click()}
@@ -203,13 +223,13 @@ export default function App() {
         {results && (
           <div className="results-panel">
             {results.design_summary && (
-              <div className="summary-banner">
+              <div ref={summaryRef} className="summary-banner fly-in-scroll">
                 <span className="summary-label">Design concept</span>
                 <p className="design-summary">"{results.design_summary}"</p>
               </div>
             )}
 
-            <section className="card">
+            <section ref={rendersRef} className="card fly-in-scroll">
               <h2>Your renders</h2>
               <div className="renders-grid">
                 {results.renders.map((url, i) => (
@@ -220,7 +240,7 @@ export default function App() {
               </div>
             </section>
 
-            <section className="card">
+            <section ref={productsRef} className="card fly-in-scroll">
               <h2>Shop the look</h2>
               <div className="products-grid">
                 {results.products.map((p, i) => (
@@ -238,7 +258,7 @@ export default function App() {
               </div>
             </section>
 
-            <section className="card refine-card">
+            <section ref={refineRef} className="card refine-card fly-in-scroll">
               <h2>Refine the design</h2>
               <p className="card-sub">Not quite right? Tell Agnes what to change.</p>
               <div className="refine-row">
