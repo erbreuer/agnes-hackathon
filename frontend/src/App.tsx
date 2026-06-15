@@ -30,7 +30,6 @@ export default function App() {
   const [prompt, setPrompt] = useState('')
   const [budget, setBudget] = useState('1500')
   const [refUrls, setRefUrls] = useState('')
-  const [showAdvanced, setShowAdvanced] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<Results | null>(null)
@@ -154,22 +153,15 @@ export default function App() {
           />
         </div>
 
-        <button className="link-btn" onClick={() => setShowAdvanced(v => !v)}>
-          {showAdvanced ? '▲ Hide' : '▼ Advanced'} options
-        </button>
-        {showAdvanced && (
-          <>
-            <label className="field-label">Reference image URLs <span className="muted">(comma-separated)</span></label>
-            <input
-              className="input"
-              type="text"
-              placeholder="https://example.com/inspo1.jpg, https://..."
-              value={refUrls}
-              onChange={e => setRefUrls(e.target.value)}
-              disabled={loading}
-            />
-          </>
-        )}
+        <label className="field-label">Reference image URLs <span className="muted">(comma-separated)</span></label>
+        <input
+          className="input"
+          type="text"
+          placeholder="https://example.com/inspo1.jpg, https://..."
+          value={refUrls}
+          onChange={e => setRefUrls(e.target.value)}
+          disabled={loading}
+        />
 
         {error && <div className="error-banner">{error}</div>}
 
@@ -189,7 +181,7 @@ export default function App() {
       <header className="header">
         <div className="header-inner">
           <div className="header-brand">
-            <span className="wordmark">Agnes</span>
+            <span className="wordmark">Hygge</span>
             <span className="tagline">interior design</span>
           </div>
           <span className="header-deco">🌿</span>
@@ -199,7 +191,7 @@ export default function App() {
       {!results && (
         <div className="hero">
           <div className="hero-deco-top" />
-          <p className="hero-eyebrow">Hygge · Cosy · Home</p>
+          <p className="hero-eyebrow">Creative · Cosy · Home</p>
           <h1 className="hero-title">
             Design a room you<br /><em>never want to leave</em>
           </h1>

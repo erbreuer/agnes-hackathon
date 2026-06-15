@@ -50,17 +50,17 @@ body {
 }
 
 .header-inner {
-  height: 68px;
+  height: clamp(56px, 7vw, 72px);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.header-brand { display: flex; align-items: baseline; gap: 0.75rem; }
+.header-brand { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
 
 .wordmark {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: 22px;
+  font-size: clamp(18px, 2vw, 22px);
   font-weight: 600;
   color: var(--forest);
   letter-spacing: 0.02em;
@@ -69,7 +69,7 @@ body {
 
 .tagline {
   font-family: 'Dancing Script', cursive;
-  font-size: 16px;
+  font-size: clamp(13px, 1.4vw, 16px);
   color: var(--terracotta);
   font-weight: 600;
 }
@@ -124,41 +124,53 @@ body {
 }
 
 .hero-sub {
-  font-size: 16px;
+  font-size: clamp(14px, 1.4vw, 16px);
   color: var(--text-muted);
   font-weight: 300;
-  max-width: 480px;
+  max-width: 520px;
   margin: 0.75rem auto 0;
+  padding: 0 1rem;
 }
 
 /* ── Layout ── */
 .layout {
   flex: 1;
-  padding: clamp(1.5rem, 3vw, 3rem) clamp(1rem, 4vw, 3.5rem) 6rem;
+  padding: clamp(1.25rem, 3vw, 3rem) clamp(1rem, 4vw, 4rem) 5rem;
   width: 100%;
 }
 
+/* Pre-results: form card centered, but card itself is contained */
 .layout--center {
-  max-width: 620px;
-  margin: 0 auto;
+  display: flex;
+  justify-content: center;
 }
 
+.layout--center .form-panel {
+  width: 100%;
+  max-width: 640px;
+}
+
+/* Post-results: 2-column layout that scales with viewport */
 .layout--split {
   display: grid;
-  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
-  gap: clamp(1rem, 2.5vw, 2.5rem);
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: clamp(1.25rem, 2.5vw, 2.5rem);
   align-items: start;
+  max-width: 1800px;
+  margin: 0 auto;
 }
 
 .layout--split .form-panel {
   position: sticky;
   top: 1.5rem;
+  width: 100%;
 }
 
 .results-panel {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: clamp(1rem, 2vw, 1.75rem);
+  min-width: 0; /* prevent grid blowout */
 }
 
 /* ── Cards ── */
@@ -166,7 +178,7 @@ body {
   background: var(--warm-white);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  padding: 2rem;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
   border: 1px solid var(--sand);
 }
 
@@ -422,7 +434,7 @@ body {
 .summary-banner {
   background: var(--warm-white);
   border-radius: var(--radius-card);
-  padding: 1.75rem 2rem;
+  padding: clamp(1.25rem, 2.5vw, 1.75rem) clamp(1.25rem, 2.5vw, 2rem);
   box-shadow: var(--shadow-card);
   border: 1px solid var(--sand);
   border-left: 4px solid var(--forest-mid);
@@ -449,8 +461,8 @@ body {
 /* ── Renders ── */
 .renders-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: clamp(0.6rem, 1.5vw, 1rem);
   margin-top: 1.25rem;
 }
 
@@ -474,8 +486,8 @@ body {
 /* ── Products ── */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+  gap: clamp(0.75rem, 1.5vw, 1rem);
   margin-top: 1.25rem;
 }
 
@@ -571,14 +583,45 @@ body {
 .muted { color: var(--text-muted); font-weight: 400; }
 
 /* ── Responsive ── */
-@media (max-width: 760px) {
-  .layout--split { grid-template-columns: 1fr; }
-  .layout--split .form-panel { position: static; }
-  .renders-grid { grid-template-columns: repeat(2, 1fr); }
+/* Tablet: split becomes single column */
+@media (max-width: 880px) {
+  .layout--split {
+    grid-template-columns: 1fr;
+  }
+  .layout--split .form-panel {
+    position: static;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .layout--split .results-panel {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
 }
 
-@media (max-width: 480px) {
+/* Small tablets / large phones */
+@media (max-width: 600px) {
+  .header-deco { display: none; }
+  .hero-title br { display: none; }
+  .renders-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Phones */
+@media (max-width: 440px) {
+  body { font-size: 14px; }
   .renders-grid { grid-template-columns: 1fr; }
   .refine-row { flex-direction: column; }
-  .card { padding: 1.1rem; }
+  .refine-row .btn { width: 100%; }
+  .photo-thumb { width: 56px; height: 56px; }
+  .dropzone { min-height: 140px; }
+  .dropzone--filled { min-height: 200px; }
+  .dropzone-preview { height: 200px; }
+  .dropzone-icon { width: 80px; height: 64px; }
+  .field-label { font-size: 10px; }
+}
+
+/* Very large screens — ensure content doesn't sprawl too wide */
+@media (min-width: 1900px) {
+  .layout--split { max-width: 1800px; }
 }
