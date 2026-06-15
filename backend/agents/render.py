@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 # payload limits that gave us 500s during F05 stress testing.
 MAX_PRODUCTS = 3
 
-# Multi-image composition routinely takes 60-90s, so give it a generous timeout
-# (the default 60s in agnes.image() reliably ReadTimeouts on these payloads).
+# Multi-image composition reliably takes ~90s, so a 60s cap ReadTimeouts on
+# every call and produces no render. Give it real headroom (the products-only
+# fallback still protects the UX if Agnes is genuinely slow/down).
 RENDER_TIMEOUT = 120
-# The Agnes compose endpoint is also intermittently flaky (transient 500/502) —
-# retry once before giving up. Bounded so /design can't hang for minutes.
+# Retry once on transient 500/502s before falling back to products-only.
 MAX_ATTEMPTS = 2
 
 
