@@ -2,6 +2,10 @@
 
 Usage (from the backend/ directory):
     python scripts/test_agents.py analyze
+    python scripts/test_agents.py plan
+    python scripts/test_agents.py scout
+    python scripts/test_agents.py render
+    python scripts/test_agents.py pipeline   # runs the whole flow end-to-end
 """
 import asyncio
 import base64
@@ -12,9 +16,23 @@ import sys
 # Make backend/ importable when run as `python scripts/test_agents.py`.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agents import analyze_space, render_room  # noqa: E402
+from agents import analyze_space, plan_design, render_room, scout_products  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
+
+_SAMPLE_BRIEF = {
+    "style": "mid-century modern",
+    "palette": ["warm white", "walnut brown", "sage green", "brass"],
+    "lighting": "bright south-facing window, single ceiling pendant",
+    "fixed_elements": ["radiator under window", "two doorways", "hardwood floor"],
+    "approx_size": "medium ~18 sqm",
+    "keep": ["walnut bookshelf"],
+    "replace": ["worn beige sofa", "small dated rug"],
+}
+
+_SAMPLE_PROMPT = "make this room cozy and Scandinavian"
+_SAMPLE_BUDGET = 1500
+_SAMPLE_FEEDBACK = "cheaper sofa, add more plants"
 
 
 def _load_room_b64() -> str:
@@ -25,6 +43,51 @@ def _load_room_b64() -> str:
 async def run_analyze():
     brief = await analyze_space(_load_room_b64())
     print(json.dumps(brief, indent=2))
+
+
+def _assert_budget(plan: dict, budget: float, label: str) -> None:
+    items = plan.get("items") or []
+    total = sum(it["max_price"] for it in items)
+    print(f"[{label}] sum(max_price) = {total:.2f} / budget {budget}")
+    if total > budget + 1e-6:
+        print(f"[{label}] FAIL: sum {total:.2f} exceeds budget {budget}")
+        sys.exit(1)
+    if not (4 <= len(items) <= 8):
+        print(f"[{label}] WARN: expected 4-8 items, got {len(items)}")
+
+
+async def run_plan():
+    print("=== initial plan ===")
+    plan = await plan_design(_SAMPLE_BRIEF, _SAMPLE_PROMPT, _SAMPLE_BUDGET)
+    print(json.dumps(plan, indent=2))
+    _assert_budget(plan, _SAMPLE_BUDGET, "initial")
+
+    print("\n=== refined plan (with feedback) ===")
+    refined = await plan_design(
+        _SAMPLE_BRIEF, _SAMPLE_PROMPT, _SAMPLE_BUDGET, feedback=_SAMPLE_FEEDBACK
+    )
+    print(json.dumps(refined, indent=2))
+    _assert_budget(refined, _SAMPLE_BUDGET, "refined")
+
+
+async def run_scout():
+    items = [
+        {"search_query": "modern linen accent chair", "budget_cap": 400, "category": "chair"},
+        {"search_query": "minimalist floor lamp", "budget_cap": 100, "category": "lamp"},
+        {"search_query": "Scandinavian coffee table", "budget_cap": 250, "category": "table"},
+    ]
+
+    results = await scout_products(items)
+    print(f"\nscout_products → {len(results)} products:\n")
+    for p in results:
+        print(json.dumps(p, indent=2))
+
+    assert len(results) == len(items), "Expected one product per item"
+    for p in results:
+        assert p.get("name"), "Missing name"
+        assert p.get("image"), "Missing image"
+        assert p.get("link"), "Missing link"
+    print("\nAll assertions passed.")
 
 
 _STUB_PRODUCTS = [
@@ -60,7 +123,58 @@ async def run_render():
     print(f"\n{len(renders)}/3 renders returned.")
 
 
-MODES = {"analyze": run_analyze, "render": run_render}
+def _plan_items_to_scout_items(plan_items: list[dict]) -> list[dict]:
+    """Bridge F03 plan items → F04 scout input shape."""
+    return [
+        {
+            "search_query": it["search_query"],
+            "budget_cap": it["max_price"],
+            "category": it["category"],
+        }
+        for it in plan_items
+    ]
+
+
+async def run_pipeline():
+    """End-to-end: analyze_space → plan_design → scout_products → render_room."""
+    room_b64 = _load_room_b64()
+
+    print("=== 1/4 analyze_space ===")
+    brief = await analyze_space(room_b64)
+    print(json.dumps(brief, indent=2))
+
+    print("\n=== 2/4 plan_design ===")
+    plan = await plan_design(brief, _SAMPLE_PROMPT, _SAMPLE_BUDGET)
+    print(json.dumps(plan, indent=2))
+    _assert_budget(plan, _SAMPLE_BUDGET, "pipeline")
+    if not plan["items"]:
+        print("[pipeline] FAIL: plan returned no items")
+        sys.exit(1)
+
+    print("\n=== 3/4 scout_products ===")
+    scout_items = _plan_items_to_scout_items(plan["items"])
+    products = await scout_products(scout_items)
+    print(f"got {len(products)}/{len(scout_items)} products")
+    for p in products:
+        print(json.dumps(p, indent=2))
+    if not products:
+        print("[pipeline] FAIL: scout returned no products")
+        sys.exit(1)
+
+    print("\n=== 4/4 render_room ===")
+    renders = await render_room(room_b64, products, plan["design_summary"])
+    print(json.dumps(renders, indent=2))
+    print(f"\n{len(renders)}/3 renders returned.")
+    print("\n[pipeline] done.")
+
+
+MODES = {
+    "analyze": run_analyze,
+    "plan": run_plan,
+    "scout": run_scout,
+    "render": run_render,
+    "pipeline": run_pipeline,
+}
 
 
 def main():
