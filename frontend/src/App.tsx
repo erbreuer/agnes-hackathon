@@ -85,127 +85,140 @@ export default function App() {
     }
   }, [results, feedback])
 
+  const formPanel = (
+    <div className="form-panel">
+      <section className="card form-card">
+        <h2>Design your room</h2>
+        <p className="card-sub">Upload a photo, describe your vision, set a budget.</p>
+
+        <div
+          className={`dropzone ${photo ? 'dropzone--filled' : ''}`}
+          onDrop={handleDrop}
+          onDragOver={e => e.preventDefault()}
+          onClick={() => document.getElementById('file-input')?.click()}
+        >
+          {photoPreview ? (
+            <img src={photoPreview} alt="Room preview" className="dropzone-preview" />
+          ) : (
+            <div className="dropzone-hint">
+              <img src="/books.svg" alt="" className="dropzone-icon" />
+              <span>Drop your room photo here or <u>browse photos</u></span>
+            </div>
+          )}
+        </div>
+
+        <input
+          id="file-input"
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={e => e.target.files?.[0] && handlePhoto(e.target.files[0])}
+        />
+
+        {photoHistory.length > 1 && (
+          <div className="photo-strip">
+            {photoHistory.map((p, i) => (
+              <button
+                key={i}
+                className={`photo-thumb-btn ${p.preview === photoPreview ? 'photo-thumb-btn--active' : ''}`}
+                onClick={e => { e.stopPropagation(); setPhoto(p.file); setPhotoPreview(p.preview) }}
+                title={p.file.name}
+              >
+                <img src={p.preview} alt={`Photo ${i + 1}`} className="photo-thumb" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        <label className="field-label">Describe your vision</label>
+        <textarea
+          className="textarea"
+          rows={3}
+          placeholder="e.g. cozy Scandinavian feel, warm tones, more plants"
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          disabled={loading}
+        />
+
+        <label className="field-label">Budget</label>
+        <div className="input-prefix-wrap">
+          <span className="input-prefix">$</span>
+          <input
+            className="input input--budget"
+            type="number"
+            min={0}
+            placeholder="1500"
+            value={budget}
+            onChange={e => setBudget(e.target.value)}
+            disabled={loading}
+          />
+        </div>
+
+        <button className="link-btn" onClick={() => setShowAdvanced(v => !v)}>
+          {showAdvanced ? '▲ Hide' : '▼ Advanced'} options
+        </button>
+        {showAdvanced && (
+          <>
+            <label className="field-label">Reference image URLs <span className="muted">(comma-separated)</span></label>
+            <input
+              className="input"
+              type="text"
+              placeholder="https://example.com/inspo1.jpg, https://..."
+              value={refUrls}
+              onChange={e => setRefUrls(e.target.value)}
+              disabled={loading}
+            />
+          </>
+        )}
+
+        {error && <div className="error-banner">{error}</div>}
+
+        <button
+          className="btn btn--primary"
+          onClick={handleGenerate}
+          disabled={loading || !photo || !prompt || !budget}
+        >
+          {loading ? <><span className="spinner" /> Generating…</> : 'Generate Design'}
+        </button>
+      </section>
+    </div>
+  )
+
   return (
     <div className="page">
       <header className="header">
         <div className="header-inner">
-          <span className="wordmark">Agnes</span>
-          <span className="tagline">AI Interior Designer</span>
+          <div className="header-brand">
+            <span className="wordmark">Agnes</span>
+            <span className="tagline">interior design</span>
+          </div>
+          <span className="header-deco">🌿</span>
         </div>
       </header>
 
-      <main className="main">
-        {/* FORM */}
-        <section className="card form-card">
-          <h2>Design your room</h2>
-          <p className="card-sub">Upload a photo, describe your vision, set a budget.</p>
+      {!results && (
+        <div className="hero">
+          <div className="hero-deco-top" />
+          <p className="hero-eyebrow">Hygge · Cosy · Home</p>
+          <h1 className="hero-title">
+            Design a room you<br /><em>never want to leave</em>
+          </h1>
+          <p className="hero-sub">Upload a photo, describe the feeling you want, and Agnes finds real furniture you can buy today.</p>
+        </div>
+      )}
 
-          {/* Drop zone */}
-          <div
-            className={`dropzone ${photo ? 'dropzone--filled' : ''}`}
-            onDrop={handleDrop}
-            onDragOver={e => e.preventDefault()}
-            onClick={() => document.getElementById('file-input')?.click()}
-          >
-            {photoPreview ? (
-              <img src={photoPreview} alt="Room preview" className="dropzone-preview" />
-            ) : (
-              <div className="dropzone-hint">
-                <span className="dropzone-icon">🏠</span>
-                <span>Drop your room photo here or <u>browse</u></span>
+      <div className={`layout ${results ? 'layout--split' : 'layout--center'}`}>
+        {formPanel}
+
+        {results && (
+          <div className="results-panel">
+            {results.design_summary && (
+              <div className="summary-banner">
+                <span className="summary-label">Design concept</span>
+                <p className="design-summary">"{results.design_summary}"</p>
               </div>
             )}
-          </div>
-          <input
-            id="file-input"
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={e => e.target.files?.[0] && handlePhoto(e.target.files[0])}
-          />
 
-          {/* Photo history strip */}
-          {photoHistory.length > 1 && (
-            <div className="photo-strip">
-              {photoHistory.map((p, i) => (
-                <button
-                  key={i}
-                  className={`photo-thumb-btn ${p.preview === photoPreview ? 'photo-thumb-btn--active' : ''}`}
-                  onClick={() => { setPhoto(p.file); setPhotoPreview(p.preview) }}
-                  title={p.file.name}
-                >
-                  <img src={p.preview} alt={`Photo ${i + 1}`} className="photo-thumb" />
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Prompt */}
-          <label className="field-label">Describe your vision</label>
-          <textarea
-            className="textarea"
-            rows={3}
-            placeholder="e.g. make it cozy and Scandinavian, warm tones, more plants"
-            value={prompt}
-            onChange={e => setPrompt(e.target.value)}
-            disabled={loading}
-          />
-
-          {/* Budget */}
-          <label className="field-label">Budget</label>
-          <div className="input-prefix-wrap">
-            <span className="input-prefix">$</span>
-            <input
-              className="input input--budget"
-              type="number"
-              min={0}
-              placeholder="1500"
-              value={budget}
-              onChange={e => setBudget(e.target.value)}
-              disabled={loading}
-            />
-          </div>
-
-          {/* Advanced */}
-          <button className="link-btn" onClick={() => setShowAdvanced(v => !v)}>
-            {showAdvanced ? '▲ Hide' : '▼ Advanced'} options
-          </button>
-          {showAdvanced && (
-            <>
-              <label className="field-label">Reference image URLs <span className="muted">(comma-separated)</span></label>
-              <input
-                className="input"
-                type="text"
-                placeholder="https://example.com/inspo1.jpg, https://..."
-                value={refUrls}
-                onChange={e => setRefUrls(e.target.value)}
-                disabled={loading}
-              />
-            </>
-          )}
-
-          {error && <div className="error-banner">{error}</div>}
-
-          <button
-            className="btn btn--primary"
-            onClick={handleGenerate}
-            disabled={loading || !photo || !prompt || !budget}
-          >
-            {loading ? <><span className="spinner" /> Generating…</> : 'Generate Design'}
-          </button>
-        </section>
-
-        {/* RESULTS */}
-        {results && (
-          <>
-            {/* Design summary */}
-            {results.design_summary && (
-              <section className="summary-section">
-                <p className="design-summary">"{results.design_summary}"</p>
-              </section>
-            )}
-
-            {/* Renders */}
             <section className="card">
               <h2>Your renders</h2>
               <div className="renders-grid">
@@ -217,7 +230,6 @@ export default function App() {
               </div>
             </section>
 
-            {/* Products */}
             <section className="card">
               <h2>Shop the look</h2>
               <div className="products-grid">
@@ -236,7 +248,6 @@ export default function App() {
               </div>
             </section>
 
-            {/* Refine */}
             <section className="card refine-card">
               <h2>Refine the design</h2>
               <p className="card-sub">Not quite right? Tell Agnes what to change.</p>
@@ -259,9 +270,9 @@ export default function App() {
                 </button>
               </div>
             </section>
-          </>
+          </div>
         )}
-      </main>
+      </div>
 
       <footer className="footer">
         <span>Agnes AI · Interior Design</span>
