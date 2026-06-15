@@ -1,9 +1,10 @@
 """FastAPI orchestrator. F00: /health. F06: POST /design. F07: POST /refine."""
+import json
 from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agnes import chat
@@ -41,13 +42,95 @@ async def _run_pipeline(
     budget: float,
     feedback: str | None = None,
 ) -> tuple[list[dict], list[str]]:
-    """Run plan -> scout -> render. Shared by /design and /refine."""
+    """Non-streaming pipeline kept for ad-hoc tests / scripts.
+    The HTTP endpoints use the per-stage streaming generators below.
+    """
     plan = await plan_design(space_brief, prompt, budget, feedback=feedback)
     products = await scout_products(plan["items"])
-    # render_room returns one URL (or None); the contract's renders is a list.
     render = await render_room(room_b64, products, plan["design_summary"])
     renders = [render] if render else []
     return products, renders
+
+
+def _event(event: str, **fields) -> bytes:
+    """Encode a single NDJSON line for the streaming response."""
+    return (json.dumps({"event": event, **fields}) + "\n").encode()
+
+
+async def _design_stream(req: "DesignRequest"):
+    """Yield NDJSON status events as each agent finishes, then the final result."""
+    try:
+        yield _event("status", stage="analyze", label="Analyzing your space")
+        space_brief = await analyze_space(req.room_image)
+
+        yield _event("status", stage="plan", label="Planning the design")
+        plan = await plan_design(space_brief, req.prompt, req.budget)
+
+        yield _event("status", stage="scout", label="Searching for real products")
+        products = await scout_products(plan["items"])
+
+        yield _event("status", stage="render", label="Rendering your room")
+        render = await render_room(req.room_image, products, plan["design_summary"])
+        renders = [render] if render else []
+    except Exception as e:
+        yield _event("error", message=str(e))
+        return
+
+    session_id = uuid4().hex
+    SESSIONS[session_id] = {
+        "room_b64": req.room_image,
+        "space_brief": space_brief,
+        "prompt": req.prompt,
+        "budget": req.budget,
+        "products": products,
+    }
+    yield _event(
+        "result",
+        data={
+            "session_id": session_id,
+            "space_brief": space_brief,
+            "renders": renders,
+            "products": products,
+            "design_summary": plan.get("design_summary", ""),
+        },
+    )
+
+
+async def _refine_stream(req: "RefineRequest"):
+    """Yield NDJSON status events for /refine — reuses stored space_brief."""
+    session = SESSIONS.get(req.session_id)
+    if session is None:
+        yield _event("error", message="unknown session_id")
+        return
+
+    try:
+        yield _event("status", stage="plan", label="Re-planning with your feedback")
+        plan = await plan_design(
+            session["space_brief"], session["prompt"], session["budget"],
+            feedback=req.feedback,
+        )
+
+        yield _event("status", stage="scout", label="Searching for real products")
+        products = await scout_products(plan["items"])
+
+        yield _event("status", stage="render", label="Rendering your room")
+        render = await render_room(session["room_b64"], products, plan["design_summary"])
+        renders = [render] if render else []
+    except Exception as e:
+        yield _event("error", message=str(e))
+        return
+
+    session["products"] = products
+    yield _event(
+        "result",
+        data={
+            "session_id": req.session_id,
+            "space_brief": session["space_brief"],
+            "renders": renders,
+            "products": products,
+            "design_summary": plan.get("design_summary", ""),
+        },
+    )
 
 
 @app.get("/health")
@@ -62,53 +145,11 @@ async def health():
 
 @app.post("/design")
 async def design(req: DesignRequest):
-    """Run analyze -> plan -> scout -> render, store a session, return the payload."""
-    try:
-        space_brief = await analyze_space(req.room_image)
-        products, renders = await _run_pipeline(
-            req.room_image, space_brief, req.prompt, req.budget
-        )
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
-
-    session_id = uuid4().hex
-    SESSIONS[session_id] = {
-        "room_b64": req.room_image,
-        "space_brief": space_brief,
-        "prompt": req.prompt,
-        "budget": req.budget,
-        "products": products,
-    }
-    return {
-        "session_id": session_id,
-        "space_brief": space_brief,
-        "renders": renders,
-        "products": products,
-    }
+    """Stream agent-progress events as NDJSON; final line carries the full payload."""
+    return StreamingResponse(_design_stream(req), media_type="application/x-ndjson")
 
 
 @app.post("/refine")
 async def refine(req: RefineRequest):
-    """Re-run plan -> scout -> render for an existing session, reusing space_brief."""
-    session = SESSIONS.get(req.session_id)
-    if session is None:
-        return JSONResponse(status_code=404, content={"error": "unknown session_id"})
-
-    try:
-        products, renders = await _run_pipeline(
-            session["room_b64"],
-            session["space_brief"],
-            session["prompt"],
-            session["budget"],
-            feedback=req.feedback,
-        )
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
-
-    session["products"] = products
-    return {
-        "session_id": req.session_id,
-        "space_brief": session["space_brief"],
-        "renders": renders,
-        "products": products,
-    }
+    """Stream agent-progress events as NDJSON; final line carries the full payload."""
+    return StreamingResponse(_refine_stream(req), media_type="application/x-ndjson")

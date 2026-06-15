@@ -26,6 +26,21 @@ type Results = {
   design_summary?: string
 }
 
+type StageId = 'analyze' | 'plan' | 'scout' | 'render'
+type Stage = { id: StageId; label: string }
+
+const DESIGN_STAGES: Stage[] = [
+  { id: 'analyze', label: 'Analyzing your space' },
+  { id: 'plan',    label: 'Planning the design' },
+  { id: 'scout',   label: 'Searching for real products' },
+  { id: 'render',  label: 'Rendering your room' },
+]
+const REFINE_STAGES: Stage[] = [
+  { id: 'plan',    label: 'Re-planning with your feedback' },
+  { id: 'scout',   label: 'Searching for real products' },
+  { id: 'render',  label: 'Rendering your room' },
+]
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -36,6 +51,36 @@ function fileToBase64(file: File): Promise<string> {
     reader.onerror = reject
     reader.readAsDataURL(file)
   })
+}
+
+function StageProgress({ stages, activeStage }: { stages: Stage[]; activeStage: StageId | null }) {
+  const activeIndex = activeStage ? stages.findIndex(s => s.id === activeStage) : -1
+  return (
+    <ul className="stage-progress" aria-live="polite">
+      {stages.map((s, i) => {
+        const state =
+          activeIndex === -1 ? 'pending' :
+          i < activeIndex   ? 'done'    :
+          i === activeIndex ? 'active'  : 'pending'
+        return (
+          <li key={s.id} className={`stage stage--${state}`}>
+            <span className="stage-icon" aria-hidden="true">
+              {state === 'done' ? (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2.5 6.2l2.3 2.3L9.5 3.7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : state === 'active' ? (
+                <span className="stage-dot stage-dot--pulse" />
+              ) : (
+                <span className="stage-dot" />
+              )}
+            </span>
+            <span className="stage-label">{s.label}{state === 'active' && '…'}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
 }
 
 export default function App() {
@@ -50,6 +95,7 @@ export default function App() {
   const [results, setResults] = useState<Results | null>(null)
   const [feedback, setFeedback] = useState('')
   const [refining, setRefining] = useState(false)
+  const [activeStage, setActiveStage] = useState<StageId | null>(null)
 
   const handlePhoto = useCallback((file: File) => {
     const preview = URL.createObjectURL(file)
@@ -72,15 +118,20 @@ export default function App() {
     if (!photo || !prompt || !budget) return
     setLoading(true)
     setError(null)
+    setActiveStage(null)
     try {
       const roomImage = await fileToBase64(photo)
       const refImages: string[] = refUrls ? refUrls.split(',').map((u: string) => u.trim()).filter((u): u is string => u.length > 0) : []
-      const data = await postDesign({ roomImage, prompt, budget, refImages })
+      const data = await postDesign({
+        roomImage, prompt, budget, refImages,
+        onProgress: (evt: { stage: string }) => setActiveStage(evt.stage as StageId),
+      })
       setResults(data)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong — try again')
     } finally {
       setLoading(false)
+      setActiveStage(null)
     }
   }, [photo, prompt, budget, refUrls])
 
@@ -88,14 +139,19 @@ export default function App() {
     if (!results || !feedback) return
     setRefining(true)
     setError(null)
+    setActiveStage(null)
     try {
-      const data = await postRefine({ sessionId: results.session_id, feedback })
+      const data = await postRefine({
+        sessionId: results.session_id, feedback,
+        onProgress: (evt: { stage: string }) => setActiveStage(evt.stage as StageId),
+      })
       setResults(data)
       setFeedback('')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong — try again')
     } finally {
       setRefining(false)
+      setActiveStage(null)
     }
   }, [results, feedback])
 
@@ -186,6 +242,10 @@ export default function App() {
         />
 
         {error && <div className="error-banner">{error}</div>}
+
+        {loading && (
+          <StageProgress stages={DESIGN_STAGES} activeStage={activeStage} />
+        )}
 
         <button
           className="btn btn--primary"
@@ -281,6 +341,9 @@ export default function App() {
                   {refining ? <><span className="spinner spinner--dark" /> Refining…</> : 'Refine'}
                 </button>
               </div>
+              {refining && (
+                <StageProgress stages={REFINE_STAGES} activeStage={activeStage} />
+              )}
             </section>
           </div>
         )}
