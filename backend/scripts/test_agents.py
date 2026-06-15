@@ -3,6 +3,7 @@
 Usage (from the backend/ directory):
     python scripts/test_agents.py analyze
     python scripts/test_agents.py plan
+    python scripts/test_agents.py scout
 """
 import asyncio
 import base64
@@ -13,12 +14,10 @@ import sys
 # Make backend/ importable when run as `python scripts/test_agents.py`.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agents import analyze_space, plan_design  # noqa: E402
+from agents import analyze_space, plan_design, scout_products  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
-# A realistic 7-key brief mirroring F02's analyze_space output, so the planner
-# test runs without a real vision call.
 _SAMPLE_BRIEF = {
     "style": "mid-century modern",
     "palette": ["warm white", "walnut brown", "sage green", "brass"],
@@ -69,7 +68,27 @@ async def run_plan():
     _assert_budget(refined, _SAMPLE_BUDGET, "refined")
 
 
-MODES = {"analyze": run_analyze, "plan": run_plan}
+async def run_scout():
+    items = [
+        {"search_query": "modern linen accent chair", "budget_cap": 400, "category": "chair"},
+        {"search_query": "minimalist floor lamp", "budget_cap": 100, "category": "lamp"},
+        {"search_query": "Scandinavian coffee table", "budget_cap": 250, "category": "table"},
+    ]
+
+    results = await scout_products(items)
+    print(f"\nscout_products → {len(results)} products:\n")
+    for p in results:
+        print(json.dumps(p, indent=2))
+
+    assert len(results) == len(items), "Expected one product per item"
+    for p in results:
+        assert p.get("name"), "Missing name"
+        assert p.get("image"), "Missing image"
+        assert p.get("link"), "Missing link"
+    print("\nAll assertions passed.")
+
+
+MODES = {"analyze": run_analyze, "plan": run_plan, "scout": run_scout}
 
 
 def main():
