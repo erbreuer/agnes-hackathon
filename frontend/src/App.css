@@ -207,6 +207,39 @@ body {
   object-fit: cover;
 }
 
+/* ── Photo strip ── */
+.photo-strip {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.photo-thumb-btn {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.photo-thumb-btn:hover { border-color: var(--blue-mid); transform: scale(1.04); }
+
+.photo-thumb-btn--active {
+  border-color: var(--blue-deep);
+  box-shadow: 0 0 0 3px var(--blue-light);
+}
+
+.photo-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  display: block;
+}
+
 /* ── Buttons ── */
 .btn {
   display: inline-flex;

@@ -26,6 +26,7 @@ function fileToBase64(file: File): Promise<string> {
 export default function App() {
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoHistory, setPhotoHistory] = useState<{ file: File; preview: string }[]>([])
   const [prompt, setPrompt] = useState('')
   const [budget, setBudget] = useState('1500')
   const [refUrls, setRefUrls] = useState('')
@@ -37,8 +38,14 @@ export default function App() {
   const [refining, setRefining] = useState(false)
 
   const handlePhoto = useCallback((file: File) => {
+    const preview = URL.createObjectURL(file)
     setPhoto(file)
-    setPhotoPreview(URL.createObjectURL(file))
+    setPhotoPreview(preview)
+    setPhotoHistory(prev => {
+      const already = prev.find(p => p.file.name === file.name && p.file.size === file.size)
+      if (already) return prev.map(p => p === already ? { file, preview } : p)
+      return [...prev, { file, preview }]
+    })
   }, [])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -116,6 +123,22 @@ export default function App() {
             style={{ display: 'none' }}
             onChange={e => e.target.files?.[0] && handlePhoto(e.target.files[0])}
           />
+
+          {/* Photo history strip */}
+          {photoHistory.length > 1 && (
+            <div className="photo-strip">
+              {photoHistory.map((p, i) => (
+                <button
+                  key={i}
+                  className={`photo-thumb-btn ${p.preview === photoPreview ? 'photo-thumb-btn--active' : ''}`}
+                  onClick={() => { setPhoto(p.file); setPhotoPreview(p.preview) }}
+                  title={p.file.name}
+                >
+                  <img src={p.preview} alt={`Photo ${i + 1}`} className="photo-thumb" />
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Prompt */}
           <label className="field-label">Describe your vision</label>
