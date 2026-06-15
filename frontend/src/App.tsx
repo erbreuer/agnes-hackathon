@@ -1,20 +1,23 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { postDesign, postRefine } from './api.js'
 import './App.css'
 
+// Callback ref: attaches the IntersectionObserver when the element actually
+// mounts. (A useEffect with [] deps ran before the results sections existed —
+// ref.current was null, so .visible was never added and the whole results
+// panel stayed at opacity:0. This fires on every mount, including late ones.)
 function useFlyIn() {
-  const ref = useRef<HTMLElement>(null)
-  useEffect(() => {
-    const el = ref.current
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  return useCallback((el: HTMLElement | null) => {
+    observerRef.current?.disconnect()
     if (!el) return
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); observer.disconnect() } },
-      { threshold: 0.12 }
+      { threshold: 0.05 }
     )
     observer.observe(el)
-    return () => observer.disconnect()
+    observerRef.current = observer
   }, [])
-  return ref as React.RefObject<HTMLElement> & React.RefObject<HTMLDivElement> & React.RefObject<HTMLSelectElement>
 }
 
 type Product = { name: string; price: number; link: string; image: string }
