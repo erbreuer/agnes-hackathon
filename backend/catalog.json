@@ -1,5 +1,12 @@
 [
   {
+    "name": "IKEA FRIHETEN Sleeper Sofa",
+    "category": "sofa",
+    "price": 299,
+    "link": "https://www.ikea.com/us/en/p/friheten-sleeper-sectional-3-seat-w-storage-skiftebo-dark-gray-s59278415/",
+    "image": "https://www.ikea.com/us/en/images/products/friheten-sleeper-sectional-3-seat-w-storage-skiftebo-dark-gray__0479135_pe616596_s5.jpg"
+  },
+  {
     "name": "IKEA KIVIK Sofa",
     "category": "sofa",
     "price": 599,
@@ -61,6 +68,13 @@
     "price": 299,
     "link": "https://www.ikea.com/us/en/p/stockholm-rug-flatwoven-handmade-stripe-multicolour-00403580/",
     "image": "https://www.ikea.com/us/en/images/products/stockholm-rug-flatwoven-handmade-stripe-multicolour__0825459_pe770770_s5.jpg"
+  },
+  {
+    "name": "IKEA JUTE Natural Rug 5x8",
+    "category": "rug",
+    "price": 99,
+    "link": "https://www.ikea.com/us/en/p/lohals-rug-flatwoven-natural-00338559/",
+    "image": "https://www.ikea.com/us/en/images/products/lohals-rug-flatwoven-natural__0950645_pe800811_s5.jpg"
   },
   {
     "name": "IKEA RANARP Floor Lamp",
