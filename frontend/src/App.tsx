@@ -24,6 +24,7 @@ type Results = {
   renders: string[]
   products: Product[]
   design_summary?: string
+  warnings?: string[]
 }
 
 type StageId = 'analyze' | 'plan' | 'scout' | 'render'
@@ -92,10 +93,12 @@ export default function App() {
   const [refUrls, setRefUrls] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [warnings, setWarnings] = useState<string[]>([])
   const [results, setResults] = useState<Results | null>(null)
   const [feedback, setFeedback] = useState('')
   const [refining, setRefining] = useState(false)
   const [activeStage, setActiveStage] = useState<StageId | null>(null)
+  const [brokenRenders, setBrokenRenders] = useState<Set<string>>(new Set())
 
   const handlePhoto = useCallback((file: File) => {
     const preview = URL.createObjectURL(file)
@@ -118,6 +121,8 @@ export default function App() {
     if (!photo || !prompt || !budget) return
     setLoading(true)
     setError(null)
+    setWarnings([])
+    setBrokenRenders(new Set())
     setActiveStage(null)
     try {
       const roomImage = await fileToBase64(photo)
@@ -125,8 +130,12 @@ export default function App() {
       const data = await postDesign({
         roomImage, prompt, budget, refImages,
         onProgress: (evt: { stage: string }) => setActiveStage(evt.stage as StageId),
+        onWarning:  (evt: { message: string }) => setWarnings(prev => [...prev, evt.message]),
       })
       setResults(data)
+      // Fold any backend-returned warnings into the banner too (covers final warnings
+      // emitted right before result, in case the stream callback hadn't flushed).
+      if (data.warnings?.length) setWarnings(data.warnings)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong — try again')
     } finally {
@@ -139,13 +148,17 @@ export default function App() {
     if (!results || !feedback) return
     setRefining(true)
     setError(null)
+    setWarnings([])
+    setBrokenRenders(new Set())
     setActiveStage(null)
     try {
       const data = await postRefine({
         sessionId: results.session_id, feedback,
         onProgress: (evt: { stage: string }) => setActiveStage(evt.stage as StageId),
+        onWarning:  (evt: { message: string }) => setWarnings(prev => [...prev, evt.message]),
       })
       setResults(data)
+      if (data.warnings?.length) setWarnings(data.warnings)
       setFeedback('')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong — try again')
@@ -241,7 +254,16 @@ export default function App() {
           disabled={loading}
         />
 
-        {error && <div className="error-banner">{error}</div>}
+        {error && <div className="error-banner" role="alert">{error}</div>}
+
+        {warnings.length > 0 && (
+          <div className="warning-banner" role="status">
+            <strong>Heads up:</strong>
+            <ul>
+              {warnings.map((w, i) => <li key={i}>{w}</li>)}
+            </ul>
+          </div>
+        )}
 
         {loading && (
           <StageProgress stages={DESIGN_STAGES} activeStage={activeStage} />
@@ -293,13 +315,32 @@ export default function App() {
 
             <section ref={rendersRef} className="card fly-in-scroll">
               <h2>Your renders</h2>
-              <div className="renders-grid">
-                {results.renders.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="render-link">
-                    <img src={url} alt={`Render ${i + 1}`} className="render-img" />
-                  </a>
-                ))}
-              </div>
+              {results.renders.length === 0 ? (
+                <p className="render-empty">
+                  No render available — Agnes's image service didn't return one.
+                  Your products and design concept are still ready below.
+                </p>
+              ) : (
+                <div className="renders-grid">
+                  {results.renders.map((url, i) => (
+                    brokenRenders.has(url) ? (
+                      <div key={i} className="render-link render-broken" role="img" aria-label="Render unavailable">
+                        <span className="render-broken-icon" aria-hidden="true">⚠</span>
+                        <span>Render image unavailable.<br />Agnes's image host is unreachable right now.</span>
+                      </div>
+                    ) : (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="render-link">
+                        <img
+                          src={url}
+                          alt={`Render ${i + 1}`}
+                          className="render-img"
+                          onError={() => setBrokenRenders(prev => new Set(prev).add(url))}
+                        />
+                      </a>
+                    )
+                  ))}
+                </div>
+              )}
             </section>
 
             <section ref={productsRef} className="card fly-in-scroll">

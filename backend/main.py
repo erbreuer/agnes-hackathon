@@ -59,21 +59,31 @@ def _event(event: str, **fields) -> bytes:
 
 async def _design_stream(req: "DesignRequest"):
     """Yield NDJSON status events as each agent finishes, then the final result."""
+    warnings: list[str] = []
     try:
         yield _event("status", stage="analyze", label="Analyzing your space")
         space_brief = await analyze_space(req.room_image)
 
         yield _event("status", stage="plan", label="Planning the design")
         plan = await plan_design(space_brief, req.prompt, req.budget)
+        if not plan.get("items"):
+            warnings.append("Could not produce a shopping list for this room.")
+            yield _event("warning", stage="plan", message=warnings[-1])
 
         yield _event("status", stage="scout", label="Searching for real products")
         products = await scout_products(plan["items"])
+        if not products:
+            warnings.append("No products matched within your budget — try raising it or simplifying the prompt.")
+            yield _event("warning", stage="scout", message=warnings[-1])
 
         yield _event("status", stage="render", label="Rendering your room")
         render = await render_room(req.room_image, products, plan["design_summary"])
         renders = [render] if render else []
+        if not render:
+            warnings.append("Agnes image render is unavailable right now — showing products without a composite render.")
+            yield _event("warning", stage="render", message=warnings[-1])
     except Exception as e:
-        yield _event("error", message=str(e))
+        yield _event("error", message=f"{type(e).__name__}: {e}")
         return
 
     session_id = uuid4().hex
@@ -92,6 +102,7 @@ async def _design_stream(req: "DesignRequest"):
             "renders": renders,
             "products": products,
             "design_summary": plan.get("design_summary", ""),
+            "warnings": warnings,
         },
     )
 
@@ -103,21 +114,31 @@ async def _refine_stream(req: "RefineRequest"):
         yield _event("error", message="unknown session_id")
         return
 
+    warnings: list[str] = []
     try:
         yield _event("status", stage="plan", label="Re-planning with your feedback")
         plan = await plan_design(
             session["space_brief"], session["prompt"], session["budget"],
             feedback=req.feedback,
         )
+        if not plan.get("items"):
+            warnings.append("Could not produce a shopping list for this feedback.")
+            yield _event("warning", stage="plan", message=warnings[-1])
 
         yield _event("status", stage="scout", label="Searching for real products")
         products = await scout_products(plan["items"])
+        if not products:
+            warnings.append("No products matched within your budget — try raising it or simplifying the feedback.")
+            yield _event("warning", stage="scout", message=warnings[-1])
 
         yield _event("status", stage="render", label="Rendering your room")
         render = await render_room(session["room_b64"], products, plan["design_summary"])
         renders = [render] if render else []
+        if not render:
+            warnings.append("Agnes image render is unavailable right now — showing updated products without a composite render.")
+            yield _event("warning", stage="render", message=warnings[-1])
     except Exception as e:
-        yield _event("error", message=str(e))
+        yield _event("error", message=f"{type(e).__name__}: {e}")
         return
 
     session["products"] = products
@@ -129,6 +150,7 @@ async def _refine_stream(req: "RefineRequest"):
             "renders": renders,
             "products": products,
             "design_summary": plan.get("design_summary", ""),
+            "warnings": warnings,
         },
     )
 

@@ -949,3 +949,47 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .stage-dot--pulse { animation: none; box-shadow: none; }
 }
+
+/* ── Warning banner (soft failures from the agent pipeline) ── */
+.warning-banner {
+  margin: 14px 0 4px;
+  padding: 12px 14px;
+  background: #FBF3DC;
+  border: 1px solid #E8D592;
+  border-radius: calc(var(--radius) - 8px);
+  color: #6B5417;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.warning-banner strong { color: #4A3A0A; margin-right: 4px; }
+.warning-banner ul { margin: 6px 0 0 18px; padding: 0; }
+.warning-banner li + li { margin-top: 4px; }
+
+/* ── Broken render placeholder ── */
+.render-broken {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 20px;
+  background: var(--cream);
+  border: 1px dashed var(--sand-dark);
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 200px;
+  border-radius: calc(var(--radius) - 8px);
+}
+.render-broken-icon {
+  font-size: 28px;
+  color: var(--terracotta);
+}
+
+.render-empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-style: italic;
+  margin: 4px 0 0;
+}

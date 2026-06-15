@@ -8,14 +8,16 @@ export async function getHealth() {
 
 /**
  * Read an NDJSON stream from a fetch Response, calling onProgress for each
- * status event. Resolves with the final result payload.
+ * status event and onWarning for each soft-failure event. Resolves with the
+ * final result payload.
  *
  * Event shapes:
- *   { event: "status", stage: "analyze"|"plan"|"scout"|"render", label: string }
- *   { event: "result", data: <payload> }
- *   { event: "error",  message: string }
+ *   { event: "status",  stage: "analyze"|"plan"|"scout"|"render", label: string }
+ *   { event: "warning", stage: string, message: string }
+ *   { event: "result",  data: <payload> }
+ *   { event: "error",   message: string }
  */
-async function consumeNdjson(resp, onProgress) {
+async function consumeNdjson(resp, onProgress, onWarning) {
   if (!resp.ok || !resp.body) throw new Error(`request failed: ${resp.status}`);
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
@@ -36,6 +38,7 @@ async function consumeNdjson(resp, onProgress) {
       let evt;
       try { evt = JSON.parse(line); } catch { continue; }
       if (evt.event === "status") onProgress?.(evt);
+      else if (evt.event === "warning") onWarning?.(evt);
       else if (evt.event === "result") result = evt.data;
       else if (evt.event === "error") throw new Error(evt.message || "pipeline error");
     }
@@ -51,9 +54,10 @@ async function consumeNdjson(resp, onProgress) {
  *   budget: string|number,
  *   refImages?: string[],
  *   onProgress?: (evt: {stage: string, label: string}) => void,
+ *   onWarning?:  (evt: {stage: string, message: string}) => void,
  * }} args
  */
-export async function postDesign({ roomImage, prompt, budget, refImages = [], onProgress }) {
+export async function postDesign({ roomImage, prompt, budget, refImages = [], onProgress, onWarning }) {
   const resp = await fetch(`${BASE}/design`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -64,14 +68,14 @@ export async function postDesign({ roomImage, prompt, budget, refImages = [], on
       ref_images: refImages,
     }),
   });
-  return consumeNdjson(resp, onProgress);
+  return consumeNdjson(resp, onProgress, onWarning);
 }
 
-export async function postRefine({ sessionId, feedback, onProgress }) {
+export async function postRefine({ sessionId, feedback, onProgress, onWarning }) {
   const resp = await fetch(`${BASE}/refine`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: sessionId, feedback }),
   });
-  return consumeNdjson(resp, onProgress);
+  return consumeNdjson(resp, onProgress, onWarning);
 }
