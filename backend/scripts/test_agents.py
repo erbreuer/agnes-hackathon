@@ -118,9 +118,10 @@ _STUB_DESIGN_SUMMARY = (
 
 
 async def run_render():
-    renders = await render_room(_load_room_b64(), _STUB_PRODUCTS, _STUB_DESIGN_SUMMARY)
-    print(json.dumps(renders, indent=2))
-    print(f"\n{len(renders)}/3 renders returned.")
+    # Stub list has 3 items — within the MAX_PRODUCTS cap.
+    render = await render_room(_load_room_b64(), _STUB_PRODUCTS, _STUB_DESIGN_SUMMARY)
+    print(json.dumps(render, indent=2))
+    print(f"\nrender returned: {'OK' if render else 'FAIL'}")
 
 
 def _plan_items_to_scout_items(plan_items: list[dict]) -> list[dict]:
@@ -162,9 +163,14 @@ async def run_pipeline():
         sys.exit(1)
 
     print("\n=== 4/4 render_room ===")
-    renders = await render_room(room_b64, products, plan["design_summary"])
-    print(json.dumps(renders, indent=2))
-    print(f"\n{len(renders)}/3 renders returned.")
+    # Simulate the user picking up to 3 of the scouted products.
+    picked = products[:3]
+    print(f"user picked {len(picked)}/{len(products)} products:")
+    for p in picked:
+        print(f"  - {p['name']}")
+    render = await render_room(room_b64, picked, plan["design_summary"])
+    print(json.dumps(render, indent=2))
+    print(f"\nrender returned: {'OK' if render else 'FAIL'}")
     print("\n[pipeline] done.")
 
 
