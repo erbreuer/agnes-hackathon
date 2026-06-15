@@ -1,0 +1,142 @@
+[
+  {
+    "name": "IKEA FRIHETEN Sleeper Sofa",
+    "category": "sofa",
+    "price": 299,
+    "link": "https://www.ikea.com/us/en/p/friheten-sleeper-sectional-3-seat-w-storage-skiftebo-dark-gray-s59278415/",
+    "image": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600"
+  },
+  {
+    "name": "IKEA KIVIK Sofa",
+    "category": "sofa",
+    "price": 599,
+    "link": "https://www.ikea.com/us/en/p/kivik-sofa-tibbleby-beige-grey-s89484345/",
+    "image": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600"
+  },
+  {
+    "name": "West Elm Urban Sofa",
+    "category": "sofa",
+    "price": 1299,
+    "link": "https://www.westelm.com/products/urban-sofa-h1643/",
+    "image": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600"
+  },
+  {
+    "name": "IKEA POÄNG Armchair",
+    "category": "chair",
+    "price": 149,
+    "link": "https://www.ikea.com/us/en/p/poaeng-armchair-birch-veneer-knisa-light-beige-s49282171/",
+    "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600"
+  },
+  {
+    "name": "MCM Walnut Accent Chair",
+    "category": "chair",
+    "price": 399,
+    "link": "https://www.article.com/product/16234/loring-walnut-accent-chair",
+    "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600"
+  },
+  {
+    "name": "Target Threshold Wingback Chair",
+    "category": "chair",
+    "price": 229,
+    "link": "https://www.target.com/p/wingback-chair/-/A-82296285",
+    "image": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600"
+  },
+  {
+    "name": "IKEA LISABO Coffee Table",
+    "category": "table",
+    "price": 129,
+    "link": "https://www.ikea.com/us/en/p/lisabo-coffee-table-ash-veneer-50392700/",
+    "image": "https://images.unsplash.com/photo-1567016432779-094069958ea5?w=600"
+  },
+  {
+    "name": "CB2 Terrace Dining Table",
+    "category": "table",
+    "price": 799,
+    "link": "https://www.cb2.com/terrace-white-marble-48-round-dining-table/s482571",
+    "image": "https://images.unsplash.com/photo-1567016432779-094069958ea5?w=600"
+  },
+  {
+    "name": "Ruggable Washable Rug 5x7",
+    "category": "rug",
+    "price": 189,
+    "link": "https://ruggable.com/products/solid-color-rug",
+    "image": "https://images.unsplash.com/photo-1531749668029-2db88e4276c7?w=600"
+  },
+  {
+    "name": "IKEA STOCKHOLM Rug",
+    "category": "rug",
+    "price": 299,
+    "link": "https://www.ikea.com/us/en/p/stockholm-rug-flatwoven-handmade-stripe-multicolour-00403580/",
+    "image": "https://images.unsplash.com/photo-1531749668029-2db88e4276c7?w=600"
+  },
+  {
+    "name": "IKEA JUTE Natural Rug 5x8",
+    "category": "rug",
+    "price": 99,
+    "link": "https://www.ikea.com/us/en/p/lohals-rug-flatwoven-natural-00338559/",
+    "image": "https://images.unsplash.com/photo-1531749668029-2db88e4276c7?w=600"
+  },
+  {
+    "name": "IKEA RANARP Floor Lamp",
+    "category": "lamp",
+    "price": 59,
+    "link": "https://www.ikea.com/us/en/p/ranarp-floor-read-lamp-off-white-50313327/",
+    "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600"
+  },
+  {
+    "name": "West Elm Sculptural Glass Globe Lamp",
+    "category": "lamp",
+    "price": 249,
+    "link": "https://www.westelm.com/products/sculptural-glass-globe-floor-lamp/",
+    "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600"
+  },
+  {
+    "name": "Target TH Arc Floor Lamp",
+    "category": "lamp",
+    "price": 79,
+    "link": "https://www.target.com/p/arc-floor-lamp/-/A-54571748",
+    "image": "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600"
+  },
+  {
+    "name": "IKEA KALLAX Shelf Unit",
+    "category": "shelf",
+    "price": 99,
+    "link": "https://www.ikea.com/us/en/p/kallax-shelf-unit-white-00275887/",
+    "image": "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600"
+  },
+  {
+    "name": "West Elm Mid-Century Bookcase",
+    "category": "shelf",
+    "price": 599,
+    "link": "https://www.westelm.com/products/mid-century-bookcase-h316/",
+    "image": "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600"
+  },
+  {
+    "name": "Society6 Abstract Wall Art Print",
+    "category": "art",
+    "price": 49,
+    "link": "https://society6.com/product/abstract-minimal-art-print",
+    "image": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600"
+  },
+  {
+    "name": "Minted Gallery Wall Art Set",
+    "category": "art",
+    "price": 129,
+    "link": "https://www.minted.com/art/abstract-gallery-set",
+    "image": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600"
+  },
+  {
+    "name": "IKEA Artificial Pothos Plant",
+    "category": "plant",
+    "price": 19,
+    "link": "https://www.ikea.com/us/en/p/fejka-artificial-potted-plant-pothos-70456003/",
+    "image": "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600"
+  },
+  {
+    "name": "The Sill Pothos in Ceramic Pot",
+    "category": "plant",
+    "price": 45,
+    "link": "https://www.thesill.com/products/pothos",
+    "image": "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600"
+  }
+]
