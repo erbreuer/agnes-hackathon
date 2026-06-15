@@ -2,6 +2,7 @@
 
 Usage (from the backend/ directory):
     python scripts/test_agents.py analyze
+    python scripts/test_agents.py plan
 """
 import asyncio
 import base64
@@ -12,9 +13,25 @@ import sys
 # Make backend/ importable when run as `python scripts/test_agents.py`.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agents import analyze_space  # noqa: E402
+from agents import analyze_space, plan_design  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
+
+# A realistic 7-key brief mirroring F02's analyze_space output, so the planner
+# test runs without a real vision call.
+_SAMPLE_BRIEF = {
+    "style": "mid-century modern",
+    "palette": ["warm white", "walnut brown", "sage green", "brass"],
+    "lighting": "bright south-facing window, single ceiling pendant",
+    "fixed_elements": ["radiator under window", "two doorways", "hardwood floor"],
+    "approx_size": "medium ~18 sqm",
+    "keep": ["walnut bookshelf"],
+    "replace": ["worn beige sofa", "small dated rug"],
+}
+
+_SAMPLE_PROMPT = "make this room cozy and Scandinavian"
+_SAMPLE_BUDGET = 1500
+_SAMPLE_FEEDBACK = "cheaper sofa, add more plants"
 
 
 def _load_room_b64() -> str:
@@ -27,7 +44,32 @@ async def run_analyze():
     print(json.dumps(brief, indent=2))
 
 
-MODES = {"analyze": run_analyze}
+def _assert_budget(plan: dict, budget: float, label: str) -> None:
+    items = plan.get("items") or []
+    total = sum(it["max_price"] for it in items)
+    print(f"[{label}] sum(max_price) = {total:.2f} / budget {budget}")
+    if total > budget + 1e-6:
+        print(f"[{label}] FAIL: sum {total:.2f} exceeds budget {budget}")
+        sys.exit(1)
+    if not (4 <= len(items) <= 8):
+        print(f"[{label}] WARN: expected 4-8 items, got {len(items)}")
+
+
+async def run_plan():
+    print("=== initial plan ===")
+    plan = await plan_design(_SAMPLE_BRIEF, _SAMPLE_PROMPT, _SAMPLE_BUDGET)
+    print(json.dumps(plan, indent=2))
+    _assert_budget(plan, _SAMPLE_BUDGET, "initial")
+
+    print("\n=== refined plan (with feedback) ===")
+    refined = await plan_design(
+        _SAMPLE_BRIEF, _SAMPLE_PROMPT, _SAMPLE_BUDGET, feedback=_SAMPLE_FEEDBACK
+    )
+    print(json.dumps(refined, indent=2))
+    _assert_budget(refined, _SAMPLE_BUDGET, "refined")
+
+
+MODES = {"analyze": run_analyze, "plan": run_plan}
 
 
 def main():
