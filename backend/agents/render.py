@@ -1,4 +1,5 @@
 """render_room agent — composites room photo + up to 3 picked product images into ONE render."""
+import asyncio
 import logging
 
 import agnes
@@ -9,6 +10,13 @@ logger = logging.getLogger(__name__)
 # itself, the image_array sent to Agnes is at most 4 entries — well within the
 # payload limits that gave us 500s during F05 stress testing.
 MAX_PRODUCTS = 3
+
+# Multi-image composition routinely takes 60-90s, so give it a generous timeout
+# (the default 60s in agnes.image() reliably ReadTimeouts on these payloads).
+RENDER_TIMEOUT = 120
+# The Agnes compose endpoint is also intermittently flaky (transient 500/502) —
+# retry once before giving up. Bounded so /design can't hang for minutes.
+MAX_ATTEMPTS = 2
 
 
 async def render_room(
@@ -42,13 +50,23 @@ async def render_room(
         f"Style: {design_summary[:180]}. Photorealistic, warm lighting."
     )
 
-    try:
-        urls = await agnes.image(prompt, image_urls=image_array)
-    except Exception as exc:
-        logger.warning("render_room failed: %s", exc)
-        return None
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            urls = await agnes.image(
+                prompt, image_urls=image_array, timeout=RENDER_TIMEOUT
+            )
+            if urls:
+                return urls[0]
+            logger.warning(
+                "render_room attempt %d/%d: empty response from agnes.image()",
+                attempt, MAX_ATTEMPTS,
+            )
+        except Exception as exc:
+            logger.warning(
+                "render_room attempt %d/%d failed: %s", attempt, MAX_ATTEMPTS, exc
+            )
+        if attempt < MAX_ATTEMPTS:
+            await asyncio.sleep(2 * attempt)  # 2s, 4s backoff
 
-    if not urls:
-        logger.warning("render_room: empty response from agnes.image()")
-        return None
-    return urls[0]
+    logger.warning("render_room: all %d attempts failed", MAX_ATTEMPTS)
+    return None
