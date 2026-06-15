@@ -77,6 +77,14 @@ export default function App() {
   const [results, setResults] = useState<Results | null>(null)
   const [feedback, setFeedback] = useState('')
   const [refining, setRefining] = useState(false)
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!lightboxSrc) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLightboxSrc(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lightboxSrc])
 
   const handlePhoto = useCallback((file: File) => {
     const preview = URL.createObjectURL(file)
@@ -163,7 +171,7 @@ export default function App() {
               <button
                 key={i}
                 className={`photo-thumb-btn ${p.preview === photoPreview ? 'photo-thumb-btn--active' : ''}`}
-                onClick={() => { setPhoto(p.file); setPhotoPreview(p.preview) }}
+                onClick={() => { setPhoto(p.file); setPhotoPreview(p.preview); setLightboxSrc(p.preview) }}
                 title={p.file.name}
                 aria-label={`Photo ${i + 1}`}
               >
@@ -334,6 +342,13 @@ export default function App() {
       <footer className="footer">
         <span>Agnes AI · Interior Design</span>
       </footer>
+
+      {lightboxSrc && (
+        <div className="photo-lightbox" onClick={() => setLightboxSrc(null)} role="dialog" aria-modal="true" aria-label="Photo preview">
+          <img src={lightboxSrc} alt="Full size preview" onClick={e => e.stopPropagation()} />
+          <button className="photo-lightbox-close" onClick={() => setLightboxSrc(null)} aria-label="Close">✕</button>
+        </div>
+      )}
     </div>
   )
 }
