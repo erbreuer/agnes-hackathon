@@ -1,4 +1,4 @@
-"""FastAPI orchestrator. F00: /health. F06: POST /design runs the full pipeline."""
+"""FastAPI orchestrator. F00: /health. F06: POST /design. F07: POST /refine."""
 from uuid import uuid4
 
 from fastapi import FastAPI
@@ -29,6 +29,27 @@ class DesignRequest(BaseModel):
     budget: float
 
 
+class RefineRequest(BaseModel):
+    session_id: str
+    feedback: str
+
+
+async def _run_pipeline(
+    room_b64: str,
+    space_brief: dict,
+    prompt: str,
+    budget: float,
+    feedback: str | None = None,
+) -> tuple[list[dict], list[str]]:
+    """Run plan -> scout -> render. Shared by /design and /refine."""
+    plan = await plan_design(space_brief, prompt, budget, feedback=feedback)
+    products = await scout_products(plan["items"])
+    # render_room returns one URL (or None); the contract's renders is a list.
+    render = await render_room(room_b64, products, plan["design_summary"])
+    renders = [render] if render else []
+    return products, renders
+
+
 @app.get("/health")
 async def health():
     """Make one real agnes-2.0-flash call to confirm connectivity."""
@@ -44,11 +65,9 @@ async def design(req: DesignRequest):
     """Run analyze -> plan -> scout -> render, store a session, return the payload."""
     try:
         space_brief = await analyze_space(req.room_image)
-        plan = await plan_design(space_brief, req.prompt, req.budget)
-        products = await scout_products(plan["items"])
-        # render_room returns one URL (or None); the contract's renders is a list.
-        render = await render_room(req.room_image, products, plan["design_summary"])
-        renders = [render] if render else []
+        products, renders = await _run_pipeline(
+            req.room_image, space_brief, req.prompt, req.budget
+        )
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
@@ -63,6 +82,33 @@ async def design(req: DesignRequest):
     return {
         "session_id": session_id,
         "space_brief": space_brief,
+        "renders": renders,
+        "products": products,
+    }
+
+
+@app.post("/refine")
+async def refine(req: RefineRequest):
+    """Re-run plan -> scout -> render for an existing session, reusing space_brief."""
+    session = SESSIONS.get(req.session_id)
+    if session is None:
+        return JSONResponse(status_code=404, content={"error": "unknown session_id"})
+
+    try:
+        products, renders = await _run_pipeline(
+            session["room_b64"],
+            session["space_brief"],
+            session["prompt"],
+            session["budget"],
+            feedback=req.feedback,
+        )
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+    session["products"] = products
+    return {
+        "session_id": req.session_id,
+        "space_brief": session["space_brief"],
         "renders": renders,
         "products": products,
     }
