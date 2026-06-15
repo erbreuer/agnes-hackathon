@@ -180,17 +180,15 @@ export default function App() {
     <div className="page">
       <header className="header">
         <div className="header-inner">
-          <div className="header-brand">
+          <div>
             <span className="wordmark">Hygge</span>
             <span className="tagline">interior design</span>
           </div>
-          <span className="header-deco">🌿</span>
         </div>
       </header>
 
       {!results && (
         <div className="hero">
-          <div className="hero-deco-top" />
           <p className="hero-eyebrow">Creative · Cosy · Home</p>
           <h1 className="hero-title">
             Design a room you<br /><em>never want to leave</em>
