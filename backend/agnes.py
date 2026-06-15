@@ -33,10 +33,12 @@ async def image(
     image_urls: list = [],
     size: str = "1024x768",
     model: str = "agnes-image-2.0-flash",
+    timeout: float = 60,
 ) -> list:
     """Generate/compose renders. image_urls + response_format go in extra_body.
 
     image_urls may mix base64 data URIs and plain https URLs — pass through as-is.
+    timeout defaults to 60s; multi-image composition needs more (callers pass higher).
     Returns a list of render URLs (data URI if only b64_json is returned). [] on error.
     """
     payload = {
@@ -46,14 +48,14 @@ async def image(
         "extra_body": {"image": image_urls, "response_format": "url"},
     }
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=timeout) as client:
             resp = await client.post(
                 f"{BASE}/images/generations", headers=_headers(), json=payload
             )
             resp.raise_for_status()
             data = resp.json()
     except Exception as e:
-        print(f"[agnes.image] error: {e}")
+        print(f"[agnes.image] error: {type(e).__name__}: {e}")
         return []
     print(f"[agnes.image] raw response: {data}")
     urls = []
