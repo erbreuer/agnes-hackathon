@@ -583,6 +583,7 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+
 /* ── Error banner ── */
 .error-banner {
   margin-top: 13px;
@@ -592,6 +593,23 @@ body {
   border-radius: 13px;
   font-size: 14px;
   border: 1px solid rgba(184, 58, 46, 0.15);
+}
+
+/* ── Field-level errors ── */
+.field-error {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--error);
+  line-height: 1.4;
+}
+
+.field--invalid {
+  border-bottom-color: var(--error) !important;
+}
+
+.upload-row--thumbs {
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 /* ── Design summary ── */

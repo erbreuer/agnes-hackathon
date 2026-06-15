@@ -38,15 +38,43 @@ function fileToBase64(file: File): Promise<string> {
   })
 }
 
+type FieldErrors = {
+  photo?: string
+  prompt?: string
+  budget?: string
+  refUrls?: string
+}
+
+function isValidUrl(s: string) {
+  try { new URL(s); return true } catch { return false }
+}
+
+function validateForm(photo: File | null, prompt: string, budget: string, refUrls: string): FieldErrors {
+  const errs: FieldErrors = {}
+  if (!photo) errs.photo = 'Please upload a room photo.'
+  if (!prompt.trim()) errs.prompt = 'Please describe your vision.'
+  else if (prompt.trim().length < 5) errs.prompt = 'Description must be at least 5 characters.'
+  const b = Number(budget)
+  if (!budget) errs.budget = 'Please enter a budget.'
+  else if (isNaN(b) || b <= 0) errs.budget = 'Budget must be a positive number.'
+  else if (b > 1_000_000) errs.budget = 'Budget seems too high — max $1,000,000.'
+  if (refUrls.trim()) {
+    const invalid = refUrls.split(',').map(u => u.trim()).filter(u => u && !isValidUrl(u))
+    if (invalid.length) errs.refUrls = `Invalid URL${invalid.length > 1 ? 's' : ''}: ${invalid.join(', ')}`
+  }
+  return errs
+}
+
 export default function App() {
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoHistory, setPhotoHistory] = useState<{ file: File; preview: string }[]>([])
   const [prompt, setPrompt] = useState('')
-  const [budget, setBudget] = useState('1500')
+  const [budget, setBudget] = useState('')
   const [refUrls, setRefUrls] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [results, setResults] = useState<Results | null>(null)
   const [feedback, setFeedback] = useState('')
   const [refining, setRefining] = useState(false)
@@ -69,11 +97,13 @@ export default function App() {
   }, [handlePhoto])
 
   const handleGenerate = useCallback(async () => {
-    if (!photo || !prompt || !budget) return
+    const errs = validateForm(photo, prompt, budget, refUrls)
+    if (Object.keys(errs).length) { setFieldErrors(errs); return }
+    setFieldErrors({})
     setLoading(true)
     setError(null)
     try {
-      const roomImage = await fileToBase64(photo)
+      const roomImage = await fileToBase64(photo!)
       const refImages: string[] = refUrls ? refUrls.split(',').map((u: string) => u.trim()).filter((u): u is string => u.length > 0) : []
       const data = await postDesign({ roomImage, prompt, budget, refImages })
       setResults(data)
@@ -85,7 +115,7 @@ export default function App() {
   }, [photo, prompt, budget, refUrls])
 
   const handleRefine = useCallback(async () => {
-    if (!results || !feedback) return
+    if (!results || !feedback.trim()) return
     setRefining(true)
     setError(null)
     try {
@@ -125,31 +155,41 @@ export default function App() {
             </svg>
             {photo ? 'Change photo' : 'Upload photo'}
           </button>
-
-          {photoHistory.map((p, i) => (
-            <button
-              key={i}
-              className={`photo-thumb-btn ${p.preview === photoPreview ? 'photo-thumb-btn--active' : ''}`}
-              onClick={() => { setPhoto(p.file); setPhotoPreview(p.preview) }}
-              title={p.file.name}
-              aria-label={`Photo ${i + 1}`}
-            >
-              <img src={p.preview} alt="" className="photo-thumb" />
-            </button>
-          ))}
         </div>
+
+        {photoHistory.length > 0 && (
+          <div className="upload-row upload-row--thumbs">
+            {photoHistory.map((p, i) => (
+              <button
+                key={i}
+                className={`photo-thumb-btn ${p.preview === photoPreview ? 'photo-thumb-btn--active' : ''}`}
+                onClick={() => { setPhoto(p.file); setPhotoPreview(p.preview) }}
+                title={p.file.name}
+                aria-label={`Photo ${i + 1}`}
+              >
+                <img src={p.preview} alt="" className="photo-thumb" />
+              </button>
+            ))}
+          </div>
+        )}
+        {fieldErrors.photo && <p className="field-error">{fieldErrors.photo}</p>}
 
         <input
           id="file-input"
           type="file"
           accept="image/*"
           style={{ display: 'none' }}
-          onChange={e => e.target.files?.[0] && handlePhoto(e.target.files[0])}
+          onChange={e => {
+            if (e.target.files?.[0]) {
+              handlePhoto(e.target.files[0])
+              setFieldErrors(prev => ({ ...prev, photo: undefined }))
+            }
+          }}
         />
 
         <label className="field-label">Describe your vision</label>
         <textarea
-          className="textarea"
+          className={`textarea${fieldErrors.prompt ? ' field--invalid' : ''}`}
           rows={1}
           placeholder="e.g. cozy Scandinavian feel, warm tones, more plants"
           value={prompt}
@@ -157,40 +197,50 @@ export default function App() {
             setPrompt(e.target.value)
             e.target.style.height = 'auto'
             e.target.style.height = e.target.scrollHeight + 'px'
+            if (fieldErrors.prompt) setFieldErrors(prev => ({ ...prev, prompt: undefined }))
           }}
           disabled={loading}
         />
+        {fieldErrors.prompt && <p className="field-error">{fieldErrors.prompt}</p>}
 
         <label className="field-label">Budget</label>
         <div className="input-prefix-wrap">
           <span className="input-prefix">$</span>
           <input
-            className="input input--budget"
+            className={`input input--budget${fieldErrors.budget ? ' field--invalid' : ''}`}
             type="number"
             min={0}
             placeholder="1 500"
             value={budget}
-            onChange={e => setBudget(e.target.value)}
+            onChange={e => {
+              setBudget(e.target.value)
+              if (fieldErrors.budget) setFieldErrors(prev => ({ ...prev, budget: undefined }))
+            }}
             disabled={loading}
           />
         </div>
+        {fieldErrors.budget && <p className="field-error">{fieldErrors.budget}</p>}
 
         <label className="field-label">Reference image URLs <span className="muted">(comma-separated)</span></label>
         <input
-          className="input"
+          className={`input${fieldErrors.refUrls ? ' field--invalid' : ''}`}
           type="text"
           placeholder="https://example.com/inspo1.jpg, https://..."
           value={refUrls}
-          onChange={e => setRefUrls(e.target.value)}
+          onChange={e => {
+            setRefUrls(e.target.value)
+            if (fieldErrors.refUrls) setFieldErrors(prev => ({ ...prev, refUrls: undefined }))
+          }}
           disabled={loading}
         />
+        {fieldErrors.refUrls && <p className="field-error">{fieldErrors.refUrls}</p>}
 
         {error && <div className="error-banner">{error}</div>}
 
         <button
           className="btn btn--primary"
           onClick={handleGenerate}
-          disabled={loading || !photo || !prompt || !budget}
+          disabled={loading}
         >
           {loading ? <><span className="spinner" /> Generating…</> : 'Generate Design'}
         </button>
