@@ -11,13 +11,12 @@ logger = logging.getLogger(__name__)
 # payload limits that gave us 500s during F05 stress testing.
 MAX_PRODUCTS = 3
 
-# Multi-image composition can take 30-60s. We bound it tightly here so a slow
-# Agnes response doesn't make the UI feel frozen — products still render even
-# if the image render comes back empty.
-RENDER_TIMEOUT = 60
-# Single attempt: a retry doubles wall-clock for the user with low success-rate
-# payoff in our testing. If the first call fails we just return None.
-MAX_ATTEMPTS = 1
+# Multi-image composition reliably takes ~90s, so a 60s cap ReadTimeouts on
+# every call and produces no render. Give it real headroom (the products-only
+# fallback still protects the UX if Agnes is genuinely slow/down).
+RENDER_TIMEOUT = 120
+# Retry once on transient 500/502s before falling back to products-only.
+MAX_ATTEMPTS = 2
 
 
 async def render_room(
