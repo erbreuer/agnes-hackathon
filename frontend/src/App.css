@@ -253,82 +253,74 @@ body {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  margin: 20px 0 8px;
+  margin: 24px 0 8px;
+  transition: color 0.15s;
 }
 
+.field-wrap:focus-within > .field-label {
+  color: var(--forest);
+}
+
+/* ── Inputs — bottom-border style ── */
 .input, .textarea {
   width: 100%;
-  border: 1.5px solid var(--sand);
-  border-radius: 13px;
-  padding: 14px 16px;
-  font-size: 15px;
+  border: none;
+  border-bottom: 2px solid var(--sand);
+  border-radius: 0;
+  padding: 10px 0;
+  font-size: 16px;
   font-family: inherit;
   font-weight: 400;
   color: var(--text-dark);
-  background: var(--parchment);
+  background: transparent;
   outline: none;
-  transition: border-color 0.18s var(--ease-out),
-              background   0.18s var(--ease-out),
-              box-shadow   0.18s var(--ease-out);
+  transition: border-color 0.2s var(--ease-out);
 }
 
 .input:hover:not(:disabled), .textarea:hover:not(:disabled) {
-  background: var(--cream);
   border-color: var(--sand-dark);
 }
 
 .input:focus, .textarea:focus {
-  background: #ffffff;
   border-color: var(--forest);
-  box-shadow: 0 0 0 3px rgba(45, 74, 53, 0.12);
 }
 
 .input:disabled, .textarea:disabled { opacity: 0.5; cursor: not-allowed; }
 .input::placeholder, .textarea::placeholder { color: var(--sand-dark); }
-.textarea { resize: vertical; min-height: 96px; }
+.textarea { resize: none; overflow: hidden; min-height: 36px; }
 
 .input-prefix-wrap {
   display: flex;
   align-items: center;
-  border: 1.5px solid var(--sand);
-  border-radius: 13px;
-  overflow: hidden;
-  background: var(--parchment);
-  transition: border-color 0.18s var(--ease-out),
-              background   0.18s var(--ease-out),
-              box-shadow   0.18s var(--ease-out);
+  border: none;
+  border-bottom: 2px solid var(--sand);
+  border-radius: 0;
+  background: transparent;
+  transition: border-color 0.2s var(--ease-out);
 }
 
-.input-prefix-wrap:hover {
-  background: var(--cream);
-  border-color: var(--sand-dark);
-}
-
-.input-prefix-wrap:focus-within {
-  background: #ffffff;
-  border-color: var(--forest);
-  box-shadow: 0 0 0 3px rgba(45, 74, 53, 0.12);
-}
+.input-prefix-wrap:hover { border-color: var(--sand-dark); }
+.input-prefix-wrap:focus-within { border-color: var(--forest); }
 
 .input-prefix {
-  padding: 14px 4px 14px 16px;
+  padding: 10px 6px 10px 0;
   color: var(--text-muted);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 400;
   user-select: none;
 }
 
 .input--budget {
   border: none;
-  border-radius: 0;
   flex: 1;
-  padding-left: 4px;
+  padding: 10px 0;
   background: transparent;
+  box-shadow: none;
 }
 
-.input--budget:hover { background: transparent; border-color: transparent; }
+.input--budget:hover { background: transparent; }
 .input--budget:focus { box-shadow: none; background: transparent; }
 
 /* ── Drop zone — more polished ── */
@@ -411,12 +403,48 @@ body {
   object-fit: cover;
 }
 
-/* ── Photo strip ── */
-.photo-strip {
+/* ── Upload row — centered, button + thumbnails ── */
+.upload-row {
   display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  margin-top: 13px;
   flex-wrap: wrap;
+  margin-bottom: 4px;
+  padding: 8px 0;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  background: var(--warm-white);
+  border: 1px solid var(--sand-dark);
+  border-radius: var(--radius-pill);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--forest);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(45,74,53,0.08), 0 4px 12px rgba(45,74,53,0.05);
+  transition: background 0.15s, border-color 0.15s,
+              box-shadow 0.15s, transform 0.2s var(--spring);
+  flex-shrink: 0;
+}
+
+.upload-btn:hover {
+  background: var(--cream);
+  border-color: var(--forest-mid);
+  box-shadow: 0 2px 8px rgba(45,74,53,0.12), 0 8px 20px rgba(45,74,53,0.07);
+  transform: translateY(-1px);
+}
+
+.upload-btn:active { transform: scale(0.97); }
+
+.upload-btn:focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 2px;
 }
 
 .photo-thumb-btn {
@@ -432,7 +460,7 @@ body {
 
 .photo-thumb-btn:hover {
   border-color: var(--sand-dark);
-  transform: scale(1.06);
+  transform: scale(1.05);
 }
 
 .photo-thumb-btn--active {
@@ -441,8 +469,8 @@ body {
 }
 
 .photo-thumb {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
   display: block;
 }
@@ -725,14 +753,14 @@ body {
 .refine-card .card-sub { color: rgba(255, 253, 248, 0.65); }
 
 .refine-card .input {
-  background: rgba(255, 253, 248, 0.08);
-  border-color: rgba(255, 253, 248, 0.2);
+  background: transparent;
+  border-bottom-color: rgba(255, 253, 248, 0.3);
   color: var(--warm-white);
 }
 
 .refine-card .input:focus {
-  border-color: rgba(255, 253, 248, 0.5);
-  box-shadow: 0 0 0 3px rgba(255, 253, 248, 0.1);
+  border-bottom-color: rgba(255, 253, 248, 0.8);
+  box-shadow: none;
 }
 
 .refine-card .input::placeholder { color: rgba(255, 253, 248, 0.4); }

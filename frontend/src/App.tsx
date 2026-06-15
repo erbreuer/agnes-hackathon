@@ -110,20 +110,33 @@ export default function App() {
         <h2 className="form-heading">Design your room</h2>
         <p className="form-sub">Upload a photo, describe your vision, set a budget.</p>
 
-        <div
-          className={`dropzone dropzone--sm ${photo ? 'dropzone--filled' : ''}`}
-          onDrop={handleDrop}
-          onDragOver={e => e.preventDefault()}
-          onClick={() => document.getElementById('file-input')?.click()}
-        >
-          {photoPreview ? (
-            <img src={photoPreview} alt="Room preview" className="dropzone-preview" />
-          ) : (
-            <div className="dropzone-hint">
-              <img src="/books.svg" alt="" className="dropzone-icon" />
-              <span>Drop your room photo here or <u>browse photos</u></span>
-            </div>
-          )}
+        {/* ── Photo upload row ── */}
+        <div className="upload-row">
+          <button
+            type="button"
+            className="upload-btn"
+            onClick={() => document.getElementById('file-input')?.click()}
+            onDrop={handleDrop}
+            onDragOver={e => e.preventDefault()}
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <path d="M7.5 1.5v8M4 5l3.5-3.5L11 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M1.5 11.5v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            {photo ? 'Change photo' : 'Upload photo'}
+          </button>
+
+          {photoHistory.map((p, i) => (
+            <button
+              key={i}
+              className={`photo-thumb-btn ${p.preview === photoPreview ? 'photo-thumb-btn--active' : ''}`}
+              onClick={() => { setPhoto(p.file); setPhotoPreview(p.preview) }}
+              title={p.file.name}
+              aria-label={`Photo ${i + 1}`}
+            >
+              <img src={p.preview} alt="" className="photo-thumb" />
+            </button>
+          ))}
         </div>
 
         <input
@@ -134,28 +147,17 @@ export default function App() {
           onChange={e => e.target.files?.[0] && handlePhoto(e.target.files[0])}
         />
 
-        {photoHistory.length > 1 && (
-          <div className="photo-strip">
-            {photoHistory.map((p, i) => (
-              <button
-                key={i}
-                className={`photo-thumb-btn ${p.preview === photoPreview ? 'photo-thumb-btn--active' : ''}`}
-                onClick={e => { e.stopPropagation(); setPhoto(p.file); setPhotoPreview(p.preview) }}
-                title={p.file.name}
-              >
-                <img src={p.preview} alt={`Photo ${i + 1}`} className="photo-thumb" />
-              </button>
-            ))}
-          </div>
-        )}
-
         <label className="field-label">Describe your vision</label>
         <textarea
           className="textarea"
-          rows={3}
+          rows={1}
           placeholder="e.g. cozy Scandinavian feel, warm tones, more plants"
           value={prompt}
-          onChange={e => setPrompt(e.target.value)}
+          onChange={e => {
+            setPrompt(e.target.value)
+            e.target.style.height = 'auto'
+            e.target.style.height = e.target.scrollHeight + 'px'
+          }}
           disabled={loading}
         />
 
@@ -166,7 +168,7 @@ export default function App() {
             className="input input--budget"
             type="number"
             min={0}
-            placeholder="1500"
+            placeholder="1 500"
             value={budget}
             onChange={e => setBudget(e.target.value)}
             disabled={loading}
